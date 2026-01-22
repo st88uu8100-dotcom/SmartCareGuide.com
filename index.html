@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- 1️⃣ 브라우저 탭/검색 결과 제목 -->
+  <title>Low-Cost Healthcare Finder | Save on Clinics & ER Visits</title>
+  
+  <!-- 2️⃣ 검색 결과에 나오는 부제 / 설명 -->
+  <meta name="description" content="Find affordable clinics in the US, check your symptoms, and avoid expensive ER visits. Free, urgent care, and pharmacy options included.">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Low-Cost Healthcare Finder</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 20px;
+}
+
+.container {
+  max-width: 800px;
+  margin: auto;
+  background: #fff;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+h1, h2, h3 { margin-top: 0; }
+label { display: block; margin: 6px 0; cursor: pointer; }
+select, button { width: 100%; padding: 12px; margin-top: 12px; font-size: 1rem; border-radius: 8px; }
+
+button {
+  border: none;
+  background: #007bff;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover { background: #0056b3; }
+
+.result {
+  margin-top: 20px;
+  padding: 16px;
+  background: #eef4ff;
+  border-left: 5px solid #007bff;
+  display: none;
+}
+
+.result.er {
+  background: #ffecec;
+  border-left-color: #d32f2f;
+}
+
+.warning { color: #b00020; font-weight: bold; }
+
+a { color: #007bff; }
+
+hr { margin: 32px 0; }
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h1>🏥 Low-Cost Healthcare Finder</h1>
+<p>Select your symptoms and insurance status to find the best care options.</p>
+
+<!-- 1️⃣ 증상 체크 -->
+<h2>🩺 Symptoms</h2>
+
+<h4>🏠 Home care (usually no clinic needed)</h4>
+<label><input type="checkbox" data-level="home"> Mild cold</label>
+<label><input type="checkbox" data-level="home"> Mild headache</label>
+<label><input type="checkbox" data-level="home"> Seasonal allergies</label>
+<label><input type="checkbox" data-level="home"> Minor muscle soreness</label>
+
+<h4>💊 Pharmacy / Retail clinic</h4>
+<label><input type="checkbox" data-level="pharmacy"> Sore throat</label>
+<label><input type="checkbox" data-level="pharmacy"> Ear pain</label>
+<label><input type="checkbox" data-level="pharmacy"> Skin rash</label>
+<label><input type="checkbox" data-level="pharmacy"> Pink eye</label>
+<label><input type="checkbox" data-level="pharmacy"> Mild UTI symptoms</label>
+
+<h4>🏥 Urgent Care</h4>
+<label><input type="checkbox" data-level="urgent"> Fever</label>
+<label><input type="checkbox" data-level="urgent"> Vomiting</label>
+<label><input type="checkbox" data-level="urgent"> Diarrhea (severe)</label>
+<label><input type="checkbox" data-level="urgent"> Minor cut</label>
+<label><input type="checkbox" data-level="urgent"> Sprain</label>
+<label><input type="checkbox" data-level="urgent"> Minor burn</label>
+
+<h4>🚨 Emergency (ER)</h4>
+<label><input type="checkbox" data-level="er"> Chest pain</label>
+<label><input type="checkbox" data-level="er"> Trouble breathing</label>
+<label><input type="checkbox" data-level="er"> Heavy bleeding</label>
+<label><input type="checkbox" data-level="er"> Loss of consciousness</label>
+<label><input type="checkbox" data-level="er"> Signs of stroke</label>
+
+<!-- 2️⃣ 보험 상태 -->
+<h2>💳 Insurance status</h2>
+<label><input type="radio" name="insurance" value="yes"> I have insurance</label>
+<label><input type="radio" name="insurance" value="no"> I do NOT have insurance</label>
+
+<button onclick="evaluateSymptoms()">Check recommended care</button>
+
+<div class="result" id="symptomResult"></div>
+
+<hr>
+
+<!-- 3️⃣ 주 → 도시 → 클리닉 -->
+<h2>📍 Find clinics near you</h2>
+<select id="state" onchange="updateCities()">
+  <option value="">-- Select state --</option>
+  <option value="California">California</option>
+  <option value="Texas">Texas</option>
+  <option value="New York">New York</option>
+</select>
+
+<select id="city">
+  <option value="">-- Select city --</option>
+</select>
+
+<button onclick="findClinics()">Find clinics</button>
+
+<div class="result" id="clinicResult"></div>
+
+<div class="footer">
+⚠ General information only. Not medical advice.
+</div>
+</div>
+
+<script>
+// ===== 증상 + 비용 판단 =====
+function evaluateSymptoms() {
+  const checked = document.querySelectorAll("input[type=checkbox]:checked");
+  const insurance = document.querySelector("input[name=insurance]:checked");
+  const box = document.getElementById("symptomResult");
+
+  if (checked.length === 0) {
+    box.style.display = "block";
+    box.className = "result";
+    box.innerHTML = "<p class='warning'>Please select at least one symptom.</p>";
+    return;
+  }
+  if (!insurance) {
+    box.style.display = "block";
+    box.className = "result";
+    box.innerHTML = "<p class='warning'>Please select your insurance status.</p>";
+    return;
+  }
+
+  let priority = "home";
+  checked.forEach(item => {
+    const level = item.dataset.level;
+    if (level === "er") priority = "er";
+    else if (level === "urgent" && priority !== "er") priority = "urgent";
+    else if (level === "pharmacy" && priority === "home") priority = "pharmacy";
+  });
+
+  const hasInsurance = insurance.value === "yes";
+  box.style.display = "block";
+  box.className = "result";
+
+  let costMsg = "";
+  switch(priority){
+    case "home":
+      costMsg = "💰 Estimated cost: $0–$10 (OTC meds)";
+      box.innerHTML = `🏠 <strong>Home care is usually sufficient.</strong><br>${costMsg}`;
+      break;
+    case "pharmacy":
+      costMsg = hasInsurance ? "💰 Estimated copay: $10–$30" : "💰 Estimated cost: $20–$75";
+      box.innerHTML = `💊 <strong>Pharmacy / Retail clinic recommended.</strong><br>${costMsg}`;
+      break;
+    case "urgent":
+      costMsg = hasInsurance ? "💰 Copay: $50–$100" : "💰 Estimated cost: $100–$200";
+      box.innerHTML = `🏥 <strong>Urgent Care recommended.</strong><br>${costMsg}`;
+      break;
+    case "er":
+      costMsg = hasInsurance ? "💰 ER copay + deductible: $100–$500" : "💰 Estimated ER cost: $500–$3000";
+      box.classList.add("er");
+      box.innerHTML = `🚨 <strong class="warning">Go to the ER immediately.</strong><br>${costMsg}`;
+      break;
+  }
+}
+
+// ===== 주 → 도시 =====
+const cityMap = {
+  "California": ["Los Angeles", "San Diego", "San Francisco"],
+  "Texas": ["Houston", "Dallas", "Austin"],
+  "New York": ["New York City", "Buffalo", "Albany"]
+};
+
+function updateCities() {
+  const state = document.getElementById("state").value;
+  const citySelect = document.getElementById("city");
+  citySelect.innerHTML = "<option value=''>-- Select city --</option>";
+  if (!state) return;
+
+  cityMap[state].forEach(city => {
+    const opt = document.createElement("option");
+    opt.value = city;
+    opt.textContent = city;
+    citySelect.appendChild(opt);
+  });
+}
+
+// ===== 클리닉 검색 =====
+function findClinics() {
+  const state = document.getElementById("state").value;
+  const city = document.getElementById("city").value;
+  const box = document.getElementById("clinicResult");
+
+  if (!state || !city) {
+    box.style.display = "block";
+    box.innerHTML = "<p class='warning'>Please select both state and city.</p>";
+    return;
+  }
+
+  box.style.display = "block";
+  box.innerHTML = `
+    <h4>Low-cost options in ${city}, ${state}</h4>
+    <ul>
+      <li><a target="_blank" href="https://www.google.com/search?q=urgent+care+${city}+${state}">Urgent Care</a></li>
+      <li><a target="_blank" href="https://www.google.com/search?q=free+clinic+no+insurance+${city}+${state}">Free / Low-cost Clinics</a></li>
+      <li><a target="_blank" href="https://www.google.com/search?q=community+health+center+${city}+${state}">Community Health Centers</a></li>
+    </ul>
+  `;
+}
+</script>
+
+</body>
+</html>
+
+
+
